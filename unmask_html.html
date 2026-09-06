@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><base href="https://d16ilfvy4mv02r.cloudfront.net/workspaces/ifu5G4uNGpDPXN6yjOqFAsCH5DGSlRVz/afd07d6a-73a5-4336-82ec-63c1a81105c5/files/">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>UNMASK — Daily Word Puzzle</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #121213;
+    --tile-bg: #F4F4F5;
+    --tile-border: #D4D4D8;
+    --correct: #6AAA64;
+    --incorrect: #787C7E;
+    --card-bg: #ffffff;
+    --panel-soft: #f4f4f5;
+    --btn-bg: #121213;
+    --btn-fg: #ffffff;
+    --input-border: #d4d4d8;
+    --muted: #71717a;
+    --shadow: 0 8px 30px rgba(0,0,0,0.08);
+    --status-err-bg: #fee2e2;
+    --status-err-fg: #b91c1c;
+    --status-ok-bg: #dcfce7;
+    --status-ok-fg: #166534;
+    --key-bg: #D4D4D8;
+  }
+
+  body.dark {
+    --bg: #121213;
+    --fg: #ffffff;
+    --tile-bg: #1a1a1c;
+    --tile-border: #3a3a3c;
+    --correct: #538d4e;
+    --incorrect: #3a3a3c;
+    --card-bg: #18181b;
+    --panel-soft: #1f1f23;
+    --btn-bg: #ffffff;
+    --btn-fg: #121213;
+    --input-border: #3a3a3c;
+    --shadow: 0 8px 30px rgba(0,0,0,0.5);
+    --status-err-bg: #4c1d1d;
+    --status-err-fg: #fecaca;
+    --status-ok-bg: #14532d;
+    --status-ok-fg: #bbf7d0;
+    --key-bg: #818384;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+    padding: 16px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ---------------- Header ---------------- */
+  header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 4px 14px;
+    border-bottom: 1px solid var(--input-border);
+    margin-bottom: 22px;
+  }
+
+  .title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .toggle {
+    position: relative;
+    width: 60px;
+    height: 32px;
+    background: var(--panel-soft);
+    border: 1.5px solid var(--input-border);
+    border-radius: 999px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+  .toggle .thumb {
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 1;
+    transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+    pointer-events: none;
+  }
+  .toggle .thumb::after { content: "☀"; }
+  body.dark .toggle .thumb { transform: translateX(28px); }
+  body.dark .toggle .thumb::after { content: "☾"; }
+
+  /* ---------------- Sections ---------------- */
+  section { width: 100%; text-align: center; }
+
+  .section-label {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted, #71717a);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  body.dark .section-label { color: #a1a1aa; }
+
+  .topsecret {
+    background: var(--card-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 16px;
+    padding: 20px 14px;
+    box-shadow: var(--shadow);
+    margin-bottom: 26px;
+  }
+  /* Lock target tiles on a single row — they never wrap or snap downward. */
+  #targetDisplay {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: nowrap;
+  }
+
+  .target-letter {
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
+    border: 2px solid var(--tile-border);
+    background: var(--tile-bg);
+    color: var(--fg);
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    border-radius: 8px;
+    user-select: none;
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  }
+  .target-letter.revealed {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #ffffff;
+    animation: flip 0.5s ease;
+  }
+  @keyframes flip {
+    0% { transform: rotateX(0deg); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
+  }
+
+  /* ---------------- Grid ---------------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 62px);
+    gap: 8px;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+  .cell {
+    width: 62px;
+    height: 62px;
+    border: 2px solid var(--tile-border);
+    background: var(--tile-bg);
+    color: var(--fg);
+    font-size: 30px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    border-radius: 8px;
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  }
+  .cell.filled { border-color: var(--fg); }
+  .cell.active { border-color: var(--correct); }
+  .cell.green {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #ffffff;
+    animation: pop 0.3s ease;
+  }
+  .cell.grey {
+    background: var(--incorrect);
+    border-color: var(--incorrect);
+    color: #ffffff;
+    animation: pop 0.3s ease;
+  }
+  @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-9px); }
+    40% { transform: translateX(9px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+  .shaking { animation: shake 0.4s ease; }
+
+  /* ---------------- Controls ---------------- */
+  .controls {
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 16px;
+    padding: 18px 14px;
+    box-shadow: var(--shadow);
+  }
+
+  .input-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  #guessInput {
+    flex: 1;
+    min-width: 0;
+    height: 54px;
+    border: 2px solid var(--input-border);
+    border-radius: 10px;
+    background: var(--tile-bg);
+    color: var(--fg);
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
+  }
+  #guessInput:focus { border-color: var(--correct); }
+  #guessInput:disabled { opacity: 0.5; }
+
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-family: inherit;
+    transition: transform 0.1s ease, background 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+  }
+  button:active { transform: scale(0.96); }
+  #submitBtn {
+    height: 54px;
+    padding: 0 18px;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  #submitBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #shareBtn {
+    display: none;
+    width: 100%;
+    height: 52px;
+    background: var(--correct);
+    color: #ffffff;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  #status {
+    min-height: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--muted, #71717a);
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  body.dark #status { color: #a1a1aa; }
+  #status.error { background: var(--status-err-bg); color: var(--status-err-fg); }
+  #status.ok { background: var(--status-ok-bg); color: var(--status-ok-fg); }
+
+  #meta {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--muted, #71717a);
+    text-align: center;
+  }
+  body.dark #meta { color: #a1a1aa; }
+
+  /* ---------------- QWERTY keyboard ---------------- */
+  .keyboard {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    margin-top: 22px;
+  }
+  .kb-row { display: flex; gap: 5px; justify-content: center; }
+  .kb-key {
+    width: 42px;
+    height: 50px;
+    background: var(--key-bg);
+    color: var(--fg);
+    border: none;
+    border-radius: 7px;
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: default;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    transition: background 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+  }
+  .kb-key.green { background: var(--correct); color: #ffffff; }
+  .kb-key.burned { background: var(--incorrect); color: #ffffff; opacity: 0.85; }
+
+  @media (max-width: 420px) {
+    .grid { grid-template-columns: repeat(5, 54px); gap: 6px; }
+    .cell { width: 54px; height: 54px; font-size: 26px; }
+    .title { font-size: 26px; letter-spacing: 5px; }
+    .kb-row { gap: 3px; }
+    .kb-key { width: 32px; height: 40px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <header>
+      <div class="title">UNMASK</div>
+      <button class="toggle" id="themeToggle" title="Toggle light / dark mode" aria-label="Toggle theme">
+        <span class="thumb"></span>
+      </button>
+    </header>
+
+    <section class="topsecret">
+      <div class="section-label">Today's Mystery Word</div>
+      <div class="target-row" id="targetDisplay"></div>
+    </section>
+
+    <section>
+      <div class="section-label">Your 5-Letter Guesses</div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <section class="controls">
+      <div class="input-row" id="inputRow">
+        <input id="guessInput" type="text" maxlength="5" autocomplete="off" autocapitalize="characters"
+               spellcheck="false" placeholder="GUESS" aria-label="Enter a 5-letter guess" />
+        <button id="submitBtn">Submit</button>
+      </div>
+      <button id="shareBtn">Share Results</button>
+      <div id="status">Guess a 5-letter word to unmask today's mystery word.</div>
+      <div id="meta">UNMASK · <span id="day"></span> · <span id="tries"></span></div>
+    </section>
+
+    <section class="keyboard" id="keyboard" aria-label="Virtual keyboard"></section>
+
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= Local 5-letter valid guesses ================= */
+  // Zero-latency dictionary. No network fetch — validated instantly in-browser.
+  var validGuesses = [
+    "STARE", "HELLO", "LEAST", "AUDIO", "ADIEU", "READY", "ABOUT", "ALERT",
+    "BEACH", "BREAD", "BREAK", "BRING", "CABLE", "CHAIR", "CHEAP", "CLEAR",
+    "CLOCK", "CLOSE", "COUNT", "DANCE", "DRINK", "DRIVE", "EARLY", "EARTH",
+    "ENJOY", "ENTER", "EVERY", "EXTRA", "FAITH", "FIELD", "FIGHT", "FIRST",
+    "FLOOR", "FOCUS", "FRAME", "FRESH", "FRONT", "FRUIT", "GLASS", "GLOBE",
+    "GRAND", "GRAPE", "GRASS", "GREEN", "GROUP", "GROWN", "GUIDE", "HAPPY",
+    "HEART", "HEAVY", "HOUSE", "IDEAL", "IMAGE", "INDEX", "LIGHT", "LOCAL",
+    "LUNCH", "MATCH", "MONEY", "MONTH", "MOUTH", "MUSIC", "NIGHT", "NOISE",
+    "NORTH", "NOVEL", "OCEAN", "OFFER", "ORDER", "PAPER", "PARTY", "PEACE",
+    "PHASE", "PHONE", "PIANO", "PIECE", "PILOT", "PLACE", "PLAIN", "PLANT",
+    "PLATE", "POINT", "POUND", "POWER", "PRESS", "PRICE", "PRIDE", "PRIZE",
+    "PROUD", "QUEEN", "QUICK", "QUIET", "QUITE", "RADIO", "RAISE", "RANGE",
+    "RATIO", "REPLY", "RIGHT", "RIVER", "ROUGH", "ROUND", "ROUTE", "ROYAL",
+    "SCALE", "SCENE", "SCOPE", "SHARE", "SHIFT", "SHIRT", "SHOCK", "SIGHT",
+    "SKILL", "SLEEP", "SMART", "SMILE", "SMOKE", "SOLID", "SOUND", "SOUTH",
+    "SPACE", "SPEAK", "SPEED", "SPEND", "STAGE", "STAND", "START", "STEAM",
+    "STEEL", "STICK", "STILL", "STONE", "STORM", "STORY", "STRIP", "STUDY",
+    "STYLE", "SUGAR", "SWEET", "TABLE", "TASTE", "THEME", "THERE", "THICK",
+    "THING", "THINK", "THREE", "THROW", "TIGHT", "TIMER", "TITLE", "TOTAL",
+    "TOUCH", "TOUGH", "TOWER", "TRACK", "TRADE", "TRAIN", "TRUCK", "TRUTH",
+    "TWICE", "UNCLE", "UNDER", "UNION", "UNITY", "VALUE", "VIDEO", "VOICE",
+    "WATCH", "WATER", "WHEEL", "WHILE", "WHITE", "WHOLE", "WORLD", "WORST",
+    "WORTH", "WRITE", "WRONG", "YOUTH", "ZEBRA", "SONIC", "SHINS", "ABACK",
+    "ABASE", "ABATE", "ABBEY", "ABBOT", "ABIDE", "ABLED", "ABODE", "ABORT",
+    "ABOVE", "ABUSE", "ABYSS", "ACORN", "ACRID", "ACTED", "ACTOR", "ACUTE",
+    "ADAGE", "ADAPT", "ADEPT", "ADMIT", "ADOBE", "ADOPT", "ADORE", "ADORN",
+    "ADULT", "AFFIX", "AFFORD", "AFRAID", "AFTER", "AGAIN", "AGAPE", "AGATE",
+    "AGENT", "AGILE", "AGING", "AGOWS", "AGONY", "AGREE", "AHEAD", "AISLE",
+    "ALARM", "ALBUM", "ALIEN", "ALIGN", "ALIKE", "ALIVE", "ALLAY", "ALLEY",
+    "ALLOT", "ALLOW", "ALLOY", "ALOFT", "ALONE", "ALONG", "ALOUD", "ALPHA",
+    "ALTAR", "ALTER", "AMAZE", "AMBER", "AMEND", "AMISS", "AMITY", "AMONG",
+    "AMPLE", "AMUSE", "ANGEL", "ANGER", "ANGLE", "ANGRY", "ANKLE", "ANTSY",
+    "ANVIL", "APART", "APEX", "APHID", "APNEA", "APPLE", "APPLY", "APRON",
+    "APTLY", "ARBOR", "ARDOR", "ARENA", "ARGUE", "ARISE", "ARMOR", "ARROW",
+    "ARSON", "ARTSY", "ASCOT", "ASHEN", "ASIDE", "ASKES", "ASKEW", "ASSET",
+    "ATAMI", "ATLAS", "ATOM", "ATOLL", "ATONE", "ATTIC", "AUDIT", "AUGUR",
+    "AUNTY", "AVAIL", "AVERT", "AVIAN", "AVOID", "AWAIT", "AWAKE", "AWARD",
+    "AWARE", "AWASH", "AWFUL", "AWOKE", "AXIAL", "AXIOM", "AXION", "AZURE",
+    "BABES", "BACKS", "BACON", "BADGE", "BADLY", "BAGEL", "BAGGY", "BAKER",
+    "BALDY", "BALES", "BALMY", "BANAL", "BANJO", "BANKS", "BARGE", "BARKS",
+    "BARNS", "BARON", "BASAL", "BASES", "BASIC", "BASIN", "BASIS", "BASTE",
+    "BATCH", "BATHS", "BATON", "BATTY", "BAWDY", "BAYOU", "BEADS", "BEADY",
+    "BEAKS", "BEAMS", "BEANS", "BEARD", "BEARS", "BEAST", "BEATS", "BEAUT",
+    "BEECH", "BEEFS", "BEEFY", "BEERS", "BEETS", "BEGAN", "BEGAT", "BEGIN",
+    "BEGUN", "BEING", "BELCH", "BELIE", "BELLE", "BELLS", "BELLY", "BELOW",
+    "BENCH", "BENDS", "BENTS", "BERET", "BERTH", "BERYL", "BESET", "BESOM",
+    "BESTS", "BETEL", "BEVEL", "BEZEL", "BIASED", "BIBLE", "BICEP", "BIDES",
+    "BIGOT", "BIKES", "BILLS", "BILLY", "BINDS", "BINGE", "BINGO", "BIPOD",
+    "BIRCH", "BIRDS", "BIRTH", "BISON", "BITCH", "BITES", "BITTY", "BLABS",
+    "BLACK", "BLADE", "BLAME", "BLAND", "BLANK", "BLARE", "BLAST", "BLAZE",
+    "BLEAK", "BLEAT", "BLEED", "BLEEP", "BLEND", "BLESS", "BLIMP", "BLIND",
+    "BLING", "BLINI", "BLINK", "BLISS", "BLITZ", "BLOAT", "BLOBS", "BLOCK",
+    "BLONDS", "BLOOD", "BLOOM", "BLOTS", "BLOWS", "BLUER", "BLUES", "BLUFF",
+    "BLUNT", "BLURB", "BLURS", "BLURT", "BLUSH", "BOARD", "BOARDS", "BOAST",
+    "BOATS", "BOBBY", "BOGEY", "BOGGY", "BOGUS", "BOILS", "BOLDY", "BOLTS",
+    "BOMBS", "BONDS", "BONES", "BONEY", "BONGO", "BONNY", "BONUS", "BOOBY",
+    "BOOKS", "BOOKY", "BOOMS", "BOOST", "BOOTY", "BOOZE", "BOOZY", "BORAX",
+    "BORNE", "BOSOM", "BOSSY", "BOTCH", "BOTHY", "BOUND", "BOUTS", "BOWEL",
+    "BOWLS", "BOXED", "BOXER", "BOXES", "BOYER", "BRACE", "BRAID", "BRAIN",
+    "BRAKE", "BRAND", "BRASH", "BRASS", "BRATS", "BRAVE", "BRAVO", "BRAWL",
+    "BRAWN", "BREED", "BREWS", "BRIAR", "BRIBE", "BRICK", "BRIDE", "BRIEF",
+    "BRIER", "BRIGS", "BRIM", "BRINE", "BRINK", "BRINY", "BRISK", "BROAD",
+    "BROIL", "BROKE", "BROOD", "BROOK", "BROOM", "BROTH", "BROWN", "BROWSE",
+    "BRUIS", "BRUNT", "BRUSH", "BRUTE", "BUBBA", "BUCKS", "BUDDY", "BUDGE",
+    "BUFFS", "BUFFET", "BUGGY", "BUGLE", "BUILD", "BUILT", "BULBS", "BULGE",
+    "BULGY", "BULKS", "BULKY", "BULLS", "BULLY", "BUMPS", "BUMPY", "BUNCH",
+    "BUNKS", "BUNNY", "BUOYS", "BURG", "BURGS", "BURIAL", "BURLY", "BURNS",
+    "BURNT", "BURRO", "BURROWS", "BURSA", "BURST", "BUSES", "BUSHY", "BUSTS",
+    "BUSTY", "BUTANE", "BUTCH", "BUTTE", "BUTTS", "BUYER", "BUZZES", "BYLAW",
+    "BYTES", "CABAL", "CABBY", "CABIN", "CACHE", "CACTUS", "CADDY", "CADET",
+    "CAFES", "CAGEY", "CAGES", "CAIRN", "CAKES", "CALLS", "CALMS", "CALVA",
+    "CALVE", "CAMEL", "CAMEO", "CAMERA", "CAMPS", "CAMPY", "CANAL", "CANES",
+    "CANINE", "CANNY", "CANOE", "CANON", "CANOPY", "CANVAS", "CANYON", "CAPER",
+    "CAPES", "CARAT", "CARDS", "CARET", "CARGO", "CAROLS", "CAROM", "CARPS",
+    "CARPET", "CARTS", "CARVE", "CASES", "CASHES", "CASING", "CASINO", "CASKS",
+    "CASTE", "CASTLE", "CASUAL", "CATCH", "CATER", "CATTY", "CAUGHT", "CAULK",
+    "CAUSE", "CAVES", "CAVIAR", "CAVIL", "CEASE", "CEDAR", "CELEB", "CELLO",
+    "CELLS", "CELTS", "CENTS", "CHAFE", "CHAFF", "CHAIN", "CHALK", "CHAMP",
+    "CHAMS", "CHANCE", "CHANG", "CHANGE", "CHANT", "CHAOS", "CHAPS", "CHARD",
+    "CHARG", "CHARGE", "CHARM", "CHARS", "CHART", "CHASE", "CHASM", "CHATS",
+    "CHEAT", "CHECK", "CHEEK", "CHEEP", "CHEER", "CHEFS", "CHERT", "CHESS",
+    "CHEST", "CHEWS", "CHEWY", "CHICK", "CHIDE", "CHIEF", "CHILD", "CHILE",
+    "CHILI", "CHILL", "CHIME", "CHIMP", "CHINA", "CHINK", "CHINO", "CHINS",
+    "CHIPS", "CHIRP", "CHIVE", "CHOIR", "CHOKE", "CHOMP", "CHOPS", "CHORD",
+    "CHORE", "CHOSE", "CHUCK", "CHUMP", "CHUNK", "CHUNKY", "CHURN", "CHUTE",
+    "CIDER", "CIGAR", "CINCH", "CIRCA", "CISCO", "CITED", "CITES", "CIVIC",
+    "CIVIL", "CLACK", "CLAD", "CLAIX", "CLAIM", "CLAMS", "CLAMP", "CLANG",
+    "CLANK", "CLANS", "CLAPS", "CLASH", "CLASP", "CLASS", "CLAWS", "CLAYEY",
+    "CLAYS", "CLEAN", "CLEAT", "CLEF", "CLEFT", "CLERK", "CLICK", "CLIFF",
+    "CLIMB", "CLING", "CLINIC", "CLINK", "CLIPS", "CLIQUE", "CLOAK", "CLODS",
+    "CLOGS", "CLONE", "CLOSET", "CLOTH", "CLOTS", "CLOUD", "CLOUT", "CLOVE",
+    "CLOWN", "CLUBS", "CLUCK", "CLUED", "CLUES", "CLUMP", "CLUNG", "COACH",
+    "COALS", "COASH", "COAST", "COATS", "COBRA", "COCKY", "COCOA", "CODES",
+    "CODEX", "COGENT", "COHORT", "COILS", "COINS", "COLDS", "COLIC", "COLIN",
+    "COLON", "COLONY", "COLORS", "COLTS", "COMAS", "COMBO", "COMB", "COMBS",
+    "COMET", "COMFY", "COMIC", "COMMA", "COMMON", "COMPS", "CONCH", "CONDO",
+    "CONES", "CONGA", "CONIC", "CONKS", "COOKS", "COOKY", "COOLS", "COONS",
+    "COPES", "COPRA", "COPSE", "CORAL", "CORDS", "CORES", "CORKS", "CORKY",
+    "CORMS", "CORNY", "CORPS", "COSTA", "COSTS", "COUCH", "COUGAR", "COUGH",
+    "COULD", "COUPE", "COURS", "COURT", "COUSIN", "COVES", "COVET", "COVEY",
+    "COWBOY", "COWER", "COWL", "COWLS", "COYOTE", "CRABS", "CRACK", "CRAFT",
+    "CRAGS", "CRAMP", "CRANE", "CRANK", "CRAPE", "CRAPS", "CRASH", "CRASS",
+    "CRATE", "CRAVE", "CRAWL", "CRAWY", "CRAZE", "CRAZY", "CREAK", "CREAM",
+    "CREDO", "CREED", "CREEK", "CREEP", "CREME", "CREPE", "CREPT", "CRESS",
+    "CREST", "CREWS", "CRIBS", "CRICK", "CRIED", "CRIER", "CRIES", "CRIME",
+    "CRIMP", "CRISP", "CRITIC", "CROAK", "CROCK", "CRONE", "CRONY", "CROOK",
+    "CROON", "CROPS", "CROSS", "CROUP", "CROWD", "CROWN", "CROWS", "CRUDE",
+    "CRUEL", "CRUISE", "CRUMB", "CRUMP", "CRUSH", "CRUST", "CRYPT", "CUBAN",
+    "CUBES", "CUBIC", "CUBIT", "CUFFS", "CULPA", "CULTS", "CUMIN", "CUPID",
+    "CURBS", "CURIO", "CURLS", "CURLY", "CURRY", "CURSE", "CURST", "CURVE",
+    "CURVY", "CUSH", "CUSHY", "CUTIE", "CYBER", "CYCLE", "CYNIC", "CYSTS",
+    "CZARS", "FABER", "FABLE", "FACED", "FACES", "FACET", "FACTS", "FACTO",
+    "FADED", "FADER", "FADES", "FAERY", "FAILS", "FAINT", "FAIRS", "FAIRY",
+    "FAKED", "FAKER", "FAKES", "FALLS", "FALSE", "FAMED", "FAMES", "FANCY",
+    "FANGS", "FANNY", "FARCE", "FARED", "FARES", "FARMS", "FASTS", "FATAL",
+    "FATED", "FATES", "FATTY", "FAULT", "FAUNA", "FAWNS", "FAWNY", "FAXED",
+    "FAXES", "FEARS", "FEAST", "FEATS", "FECAL", "FEEDS", "FEEL", "FEELS",
+    "FEIGN", "FEINT", "FELLS", "FELON", "FELTA", "FELT", "FEMAL", "FEMME",
+    "FEMUR", "FENCE", "FENDS", "FERNY", "FERRY", "FETCH", "FETAL", "FETID",
+    "FETUS", "FEVER", "FEWER", "FIACO", "FIARS", "FIAT", "FIBER", "FIBRE",
+    "FICHE", "FICKL", "FIEND", "FIERY", "FIFES", "FIFTH", "FIFTY", "FILCH",
+    "FILED", "FILER", "FILES", "FILETS", "FILLS", "FILLY", "FILM", "FILMS",
+    "FILMY", "FILTH", "FINAL", "FINCA", "FINDS", "FINED", "FINER", "FINES",
+    "FINIS", "FINNY", "FIORD", "FIRES", "FIRMS", "FISCH", "FISHY", "FISTS",
+    "FITT", "FITTY", "FIXED", "FIXER", "FIXES", "FIXT", "FIZZY", "FLACK",
+    "FLAGS", "FLAIL", "FLAIR", "FLAK", "FLAKE", "FLAKY", "FLAM", "FLAME",
+    "FLAN", "FLANK", "FLAPS", "FLARE", "FLASH", "FLASK", "FLATS", "FLATT",
+    "FLAW", "FLAWS", "FLAWZ", "FLAY", "FLEA", "FLEAS", "FLECK", "FLEE",
+    "FLEES", "FLEET", "FLESH", "FLEW", "FLEXS", "FLI", "FLICK", "FLIED",
+    "FLIER", "FLIES", "FLING", "FLINT", "FLIP", "FLIPS", "FLIRT", "FLIT",
+    "FLITS", "FLOAT", "FLOCH", "FLOCK", "FLOCS", "FLOE", "FLOOD", "FLOPS",
+    "FLORA", "FLOSS", "FLOTA", "FLOUR", "FLOUT", "FLOWN", "FLOWS", "FLU",
+    "FLUB", "FLUE", "FLUES", "FLUFF", "FLUID", "FLUKE", "FLUKY", "FLUME",
+    "FLUMP", "FLUNG", "FLUNK", "FLUR", "FLURY", "FLUSH", "FLUTE", "FLUTY",
+    "FLYER", "FOAL", "FOALS", "FOAM", "FOAMS", "FOAMY", "FOCAL", "FOE",
+    "FOES", "FOG", "FOGGY", "FOIL", "FOILS", "FOIN", "FOIST", "FOLD",
+    "FOLDS", "FOLIO", "FOLK", "FOLKS", "FOLL", "FOLLY", "FONDS", "FONDU",
+    "FONT", "FONTS", "FOOD", "FOODS", "FOOL", "FOOLS", "FOOLZ", "FOOT",
+    "FOOTS", "FOOTY", "FORAG", "FORA", "FORAY", "FORCE", "FORD", "FORDS",
+    "FORE", "FORES", "FORGE", "FORG", "FORK", "FORKS", "FORKY", "FORM",
+    "FORMA", "FORME", "FORMS", "FORT", "FORTE", "FORTH", "FORTS", "FORTY",
+    "FORUM", "FOSS", "FOSSA", "FOSSI", "FOUAL", "FOUL", "FOULS", "FOUND",
+    "FOUNT", "FOUR", "FOURS", "FOURT", "FOWL", "FOWLS", "FOX", "FOXED",
+    "FOXES", "FOY", "FOYER", "FRAC", "FRACK", "FRAIL", "FRAIM", "FRANC",
+    "FRANK", "FRANT", "FRANZ", "FRAP", "FRAPS", "FRASH", "FRASS", "FRAU",
+    "FRAUD", "FRAY", "FRAYS", "FREAK", "FREDS", "FREA", "FREC", "FREE",
+    "FREED", "FREER", "FREES", "FREEZ", "FREI", "FREM", "FREN", "FRENCH",
+    "FRENZ", "FREON", "FREQ", "FREQU", "FRET", "FRETS", "FREU", "FRIAR",
+    "FRIB", "FRIC", "FRICK", "FRID", "FRIDE", "FRIED", "FRIE", "FRIEN",
+    "FRIER", "FRIES", "FRIG", "FRIGH", "FRILL", "FRIM", "FRIN", "FRING",
+    "FRIP", "FRIS", "FRISC", "FRISH", "FRISK", "FRIT", "FRITH", "FRITZ",
+    "FRIZ", "FRIZZ", "FROCK", "FROG", "FROGS", "FROID", "FROL", "FROLI",
+    "FROM", "FRORE", "FROSH", "FROST", "FROTH", "FROWN", "FROZ", "FROZE",
+    "FRU", "FRUG", "FRUM", "FRUMP", "FRUS", "FRUST", "FRY", "FRYER",
+    "FRYES", "FRYS", "FUCI", "FUCU", "FUDD", "FUDG", "FUDGE", "FUEL",
+    "FUELS", "FUE", "FUG", "FUGAL", "FUGU", "FUGUS", "FUHR", "FUJI",
+    "FULL", "FULLS", "FULLY", "FUM", "FUMAR", "FUME", "FUMED", "FUMER",
+    "FUMES", "FUMET", "FUN", "FUND", "FUNDS", "FUNK", "FUNKS", "FUNKY",
+    "FUNN", "FUNNY", "FUR", "FURAN", "FURE", "FURL", "FURLS", "FURM",
+    "FURN", "FUROR", "FURS", "FURTH", "FURY", "FURZ", "FURZE", "FUSE",
+    "FUSED", "FUSEE", "FUSEL", "FUSER", "FUSES", "FUSI", "FUSIL", "FUSS",
+    "FUSSY", "FUST", "FUSTY", "FUT", "FUTU", "FUTUR", "FUZZ", "FUZZY",
+    "SHARK", "SHORE", "SNAKE", "SHINE", "SPARK", "TIGER", "TWIST", "UNTIL",
+    "VIRUS"
+  ];
+
+  /* ================= Theme ================= */
+  var toggleBtn = document.getElementById("themeToggle");
+  function applyTheme(dark) {
+    document.body.classList.toggle("dark", dark);
+    localStorage.setItem("unmask-theme", dark ? "dark" : "light");
+  }
+  applyTheme(localStorage.getItem("unmask-theme") === "dark");
+  toggleBtn.addEventListener("click", function () {
+    applyTheme(!document.body.classList.contains("dark"));
+  });
+
+  /* ================= Word Bank ================= */
+  var WORD_BANK = [
+    "BASKETBALL","CALCULATOR","CHIMPANZEE","CONFIDENCE","DEFINITION",
+    "EVERYTHING","FRIENDSHIP","HELICOPTER","IMPOSSIBLE","MOTORCYCLE",
+    "RAINFOREST","RESTAURANT","SIMULATION","TECHNOLOGY","TOOTHPASTE",
+    "UNIVERSITY","VEGETABLES","ACHIEVEMENT","ADVERTISING","AGRICULTURE",
+    "ANNIVERSARY","CATERPILLAR","CELEBRATION","COMMUNICATE","COMPLICATED",
+    "DESTINATION","ELECTRICITY","ENVIRONMENT","EXTERMINATE","IMAGINATION",
+    "INDEPENDENT","INFORMATION","INTELLIGENT","MARSHMALLOW","MATHEMATICS",
+    "PERSONALITY","PHOTOGRAPHY","RESPONSIBLE","SPECTACULAR","TEMPERATURE",
+    "ACCELERATION","ARCHITECTURE","BIODIVERSITY","CHAMPIONSHIP","CIVILIZATION",
+    "CONSEQUENCES","INTRODUCTION","KINDERGARTEN","RELATIONSHIP","THUNDERSTORM"
+  ];
+
+  /* ================= Daily word selection ================= */
+  function getDayIndex() {
+    var now = new Date();
+    var utc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.floor(utc / 86400000);
+  }
+  var dayIndex = getDayIndex();
+  var secret = WORD_BANK[((dayIndex % 50) + 50) % 50];
+
+  /* ================= State ================= */
+  var GRID = 5;
+  var MAX_TRIES = 5;
+  var activeRow = 0;
+  var gameOver = false;
+  var submitDisabled = false;
+  var revealed = [];       // boolean per target tile
+  var rows = [];           // letters per row
+  var rowResults = [];     // per row: array of true(green)/false(grey)
+
+  /* ================= DOM refs ================= */
+  var targetRowEl = document.getElementById("targetDisplay");
+  var gridEl = document.getElementById("grid");
+  var inputEl = document.getElementById("guessInput");
+  var submitBtn = document.getElementById("submitBtn");
+  var shareBtn = document.getElementById("shareBtn");
+  var statusEl = document.getElementById("status");
+  var dayEl = document.getElementById("day");
+  var triesEl = document.getElementById("tries");
+
+  /* ================= Build UI ================= */
+  var targetTiles = [];
+  for (var i = 0; i < secret.length; i++) {
+    revealed.push(false);
+    var t = document.createElement("div");
+    t.className = "target-letter";
+    targetRowEl.appendChild(t);
+    targetTiles.push(t);
+  }
+
+  var cells = [];
+  for (var r = 0; r < MAX_TRIES; r++) {
+    rows.push([]);
+    rowResults.push(null);
+    for (var c = 0; c < GRID; c++) {
+      var cell = document.createElement("div");
+      cell.className = "cell";
+      cell.setAttribute("data-r", r);
+      cell.setAttribute("data-c", c);
+      gridEl.appendChild(cell);
+      cells.push({ el: cell, r: r, c: c });
+    }
+  }
+
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var now = new Date();
+  dayEl.textContent = months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+  triesEl.textContent = "Tries left: " + (MAX_TRIES - activeRow);
+
+  /* ================= QWERTY keyboard ================= */
+  var KEY_ROWS = [
+    ["Q","W","E","R","T","Y","U","I","O","P"],
+    ["A","S","D","F","G","H","J","K","L"],
+    ["Z","X","C","V","B","N","M"]
+  ];
+  var keyMap = {}; // letter -> key button element
+  function buildKeyboard() {
+    var kb = document.getElementById("keyboard");
+    KEY_ROWS.forEach(function (row) {
+      var rowEl = document.createElement("div");
+      rowEl.className = "kb-row";
+      row.forEach(function (ch) {
+        var k = document.createElement("button");
+        k.type = "button";
+        k.className = "kb-key";
+        k.textContent = ch;
+        k.dataset.letter = ch;
+        rowEl.appendChild(k);
+        keyMap[ch] = k;
+      });
+      kb.appendChild(rowEl);
+    });
+  }
+  // Color feedback: green if the letter exists in the mystery word,
+  // burned (dark grey) if guessed but not present.
+  function updateKeyboard(letters) {
+    for (var i = 0; i < letters.length; i++) {
+      var ch = letters[i];
+      var k = keyMap[ch];
+      if (!k) continue;
+      if (secret.indexOf(ch) >= 0) {
+        if (!k.classList.contains("green")) k.classList.add("green");
+      } else if (!k.classList.contains("green")) {
+        k.classList.add("burned");
+      }
+    }
+  }
+  buildKeyboard();
+
+  function rowCells(r) {
+    return cells.filter(function (c) { return c.r === r; });
+  }
+
+  function renderGrid() {
+    for (var r = 0; r < MAX_TRIES; r++) {
+      var rc = rowCells(r);
+      for (var c = 0; c < GRID; c++) {
+        var el = rc[c].el;
+        var letter = (rows[r] && rows[r][c]) || "";
+        el.textContent = letter;
+        el.classList.remove("green", "grey", "filled", "active");
+        if (rowResults[r]) {
+          el.classList.add(rowResults[r][c] ? "green" : "grey");
+        } else if (letter) {
+          el.classList.add("filled");
+          if (r === activeRow && !gameOver) el.classList.add("active");
+        } else if (r === activeRow && !gameOver) {
+          el.classList.add("active");
+        }
+      }
+    }
+  }
+
+  /* ================= Mirror effect ================= */
+  inputEl.addEventListener("input", function () {
+    if (gameOver || submitDisabled) return;
+    var val = inputEl.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 5);
+    inputEl.value = val;
+    for (var c = 0; c < GRID; c++) {
+      rows[activeRow][c] = val[c] || "";
+    }
+    renderGrid();
+  });
+
+  /* ================= Local dictionary validation (zero latency) ================= */
+  // No fetch, no network request. Instantly checks the guess against the
+  // local validGuesses array after forcing it to uppercase.
+  function isRealWord(word) {
+    return validGuesses.indexOf(word) !== -1;
+  }
+
+  function shakeRow() {
+    gridEl.classList.remove("shaking");
+    void gridEl.offsetWidth; // reflow to restart animation
+    gridEl.classList.add("shaking");
+    setTimeout(function () { gridEl.classList.remove("shaking"); }, 400);
+  }
+
+  function showError(msg) {
+    statusEl.textContent = msg;
+    statusEl.className = "error";
+  }
+  function showInfo(msg) {
+    statusEl.textContent = msg;
+    statusEl.className = "";
+  }
+  function showOk(msg) {
+    statusEl.textContent = msg;
+    statusEl.className = "ok";
+  }
+
+  /* ================= Submit ================= */
+  function submitGuess() {
+    if (gameOver) return;
+
+    var word = inputEl.value.trim().toUpperCase();
+    if (word.length !== 5) {
+      showError("Please enter a 5-letter word.");
+      shakeRow();
+      return;
+    }
+
+    // Instant local validation — no background web loading requests at all.
+    if (!isRealWord(word)) {
+      showError("Not a real word!");
+      shakeRow();
+      inputEl.value = "";
+      renderGrid();
+      return;
+    }
+
+    var letters = word.split("");
+    var result = new Array(GRID).fill(false);
+    var updates = []; // target tile indices newly revealed
+
+    // Map each guess letter to an unrevealed matching position in the target
+    for (var i = 0; i < letters.length; i++) {
+      var ch = letters[i];
+      var assigned = -1;
+      for (var p = 0; p < secret.length; p++) {
+        if (secret[p] === ch && !revealed[p]) { assigned = p; break; }
+      }
+      if (assigned >= 0) {
+        revealed[assigned] = true;
+        result[i] = true;
+        updates.push(assigned);
+      } else if (secret.indexOf(ch) >= 0) {
+        // letter exists but all its positions already revealed -> still green
+        result[i] = true;
+      }
+    }
+
+    rowResults[activeRow] = result;
+    rows[activeRow] = letters.slice();
+
+    // update the on-screen keyboard (used-letter tracker)
+    updateKeyboard(letters);
+
+    // reveal top tiles (3D flip)
+    updates.forEach(function (idx) {
+      var t = targetTiles[idx];
+      t.textContent = secret[idx];
+      t.classList.add("revealed");
+    });
+
+    // animate guess tiles
+    var rc = rowCells(activeRow);
+    rc.forEach(function (c, i) {
+      setTimeout(function () {
+        c.el.classList.remove("active");
+        c.el.classList.add(result[i] ? "green" : "grey");
+      }, i * 60);
+    });
+
+    activeRow++;
+
+    var allRevealed = revealed.every(function (v) { return v; });
+    if (allRevealed) { endGame(true, activeRow); return; }
+    if (activeRow >= MAX_TRIES) { endGame(false, MAX_TRIES); return; }
+
+    triesEl.textContent = "Tries left: " + (MAX_TRIES - activeRow);
+    inputEl.value = "";
+    showInfo("Good guess! Try #" + activeRow + " of " + MAX_TRIES + ".");
+    renderGrid();
+  }
+
+  function endGame(win, score) {
+    gameOver = true;
+    inputEl.disabled = true;
+    submitBtn.style.display = "none";
+
+    if (win) {
+      showOk("🎉 You Unmasked the word completely!");
+    } else {
+      for (var i = 0; i < secret.length; i++) {
+        if (!revealed[i]) {
+          targetTiles[i].textContent = secret[i];
+          targetTiles[i].classList.add("revealed");
+        }
+      }
+      showError("Game Over! The word was " + secret + ".");
+    }
+
+    shareBtn.style.display = "block";
+    triesEl.textContent = "Score: " + score + "/" + MAX_TRIES;
+  }
+
+  /* ================= Share ================= */
+  shareBtn.addEventListener("click", function () {
+    var lines = [];
+    for (var r = 0; r < MAX_TRIES; r++) {
+      var line = "";
+      if (rowResults[r]) {
+        for (var c = 0; c < GRID; c++) line += rowResults[r][c] ? "🟩" : "⬛";
+      } else {
+        line += "⬛⬛⬛⬛⬛";
+      }
+      lines.push(line);
+    }
+    var score = 0;
+    for (var s = 0; s < MAX_TRIES; s++) if (rowResults[s]) score++;
+
+    var shareText = "UNMASK · Day " + dayIndex + " · Score " + score + "/" + MAX_TRIES
+      + "\n\n" + lines.join("\n") + "\n\nPlay: " + window.location.href;
+
+    function doneCopy() { alert("Results copied to clipboard!"); }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareText).then(doneCopy).catch(function () {
+        fallbackCopy(shareText, doneCopy);
+      });
+    } else {
+      fallbackCopy(shareText, doneCopy);
+    }
+  });
+
+  function fallbackCopy(text, onDone) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); onDone(); }
+    catch (e) { alert("Could not copy. Results:\n\n" + text); }
+    document.body.removeChild(ta);
+  }
+
+  /* ================= Events ================= */
+  submitBtn.addEventListener("click", submitGuess);
+  inputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); submitGuess(); }
+  });
+
+  renderGrid();
+  inputEl.focus();
+})();
+</script>
+</body>
+</html>
